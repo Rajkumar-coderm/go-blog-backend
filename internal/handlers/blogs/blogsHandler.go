@@ -105,44 +105,7 @@ func BookmarkPost(c *gin.Context) {
 		"data":    nil})
 }
 
-func CommentPost(c *gin.Context) {
-	finalResponse := models.CommonGetResponse{}
-	err := blogs.CommentPost(c)
-	if err != nil {
-		finalResponse.Message = err.Error()
-		finalResponse.Success = false
-		finalResponse.Data = nil
-		c.JSON(http.StatusBadRequest, finalResponse)
-		return
-	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "Request successfully completed",
-		"message": "Success",
-		"data":    nil})
-}
-
-func GetAllPostComments(c *gin.Context) {
-	var request models.GetRequest
-	if err := c.ShouldBindQuery(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid query parameters", "message": err.Error()})
-		return
-	}
-	finalResponse := models.CommonGetResponse{}
-	comments, totalCount, err := blogs.GetAllPostComments(c, &request)
-	if err != nil {
-		finalResponse.Message = err.Error()
-		finalResponse.Success = false
-		finalResponse.Data = nil
-		c.JSON(http.StatusBadRequest, finalResponse)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"status": "Request successfully completed",
-		"message":    "Success",
-		"data":       comments,
-		"totalCount": totalCount,
-	})
-}
 
 func DeletePost(c *gin.Context) {
 	finalResponse := models.CommonGetResponse{}

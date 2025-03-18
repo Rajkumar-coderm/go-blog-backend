@@ -1,4 +1,4 @@
-package blogs
+package comments
 
 import (
 	"context"
@@ -43,7 +43,7 @@ func CommentPost(c *gin.Context) error {
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {
-		return errors.New("invalid request payload")
+		return errors.New("invalid request payload" + err.Error())
 	}
 
 	if request.Content == "" {

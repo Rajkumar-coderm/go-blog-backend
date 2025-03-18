@@ -1,4 +1,4 @@
-package blogs
+package comments
 
 import (
 	"context"

@@ -2,6 +2,7 @@ package blogs
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Rajkumar-coderm/go-blog-backend/config"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/models"
@@ -17,10 +18,23 @@ func GetAll(ctx *gin.Context, request *models.GetRequest, userID string) (interf
 
 	query := bson.M{}
 	if request.Q != "" {
-		query["$text"] = bson.M{"$search": request.Q} // Enables text search
+		query["$text"] = bson.M{"$search": request.Q}
 	}
 
-	// Convert userID string to ObjectID
+	if id := request.Id; id != "" {
+		if objID, err := primitive.ObjectIDFromHex(id); err == nil {
+			query["_id"] = objID
+
+			count, err := col.CountDocuments(context.Background(), query)
+			if err != nil {
+				return nil, 0, err
+			}
+			if count == 0 {
+				return nil, 0, errors.New("post with the given ID does not exist")
+			}
+		}
+	}
+
 	var userObjectID primitive.ObjectID
 	if objID, err := primitive.ObjectIDFromHex(userID); err == nil {
 		userObjectID = objID
@@ -60,7 +74,7 @@ func GetAll(ctx *gin.Context, request *models.GetRequest, userID string) (interf
 			}},
 
 			{Key: "auther.username", Value: bson.D{
-				{Key: "$concat", Value: bson.A{"$auther.first_name", " ", "$auther.last_name"}},
+				{Key: "$concat", Value: bson.A{"$auther.username"}},
 			}},
 
 			// `isLiked` to correctly check if the user liked the post
@@ -129,22 +143,4 @@ func GetAll(ctx *gin.Context, request *models.GetRequest, userID string) (interf
 	}
 
 	return posts, totalCount, nil
-}
-
-// Get a post by ID
-func GetPostByID(c *gin.Context) (*models.Post, error) {
-	col := config.DB.Collection("posts")
-
-	objID, err := primitive.ObjectIDFromHex(c.Query("id"))
-	if err != nil {
-		return nil, err
-	}
-
-	var post models.Post
-	err = col.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&post)
-	if err != nil {
-		return nil, err
-	}
-	post.TotalLikes = len(post.Like)
-	return &post, nil
 }
