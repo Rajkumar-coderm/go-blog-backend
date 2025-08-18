@@ -1,7 +1,7 @@
 package usershandeler
 
 import (
-	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/models"
@@ -41,40 +41,45 @@ func ValidateUserName(c *gin.Context) {
 }
 
 func LoginUser(c *gin.Context) {
-	var request struct {
-		Email    string `json:"email" binding:"required,email"`
-		Password string `json:"password" binding:"required"`
-	}
-	finalResponse := models.CommonGetResponse{}
+	var request models.LoginRequest
+	var response models.CommonGetResponse
 
+	// Bind and validate request
 	if err := c.ShouldBindJSON(&request); err != nil {
-		fmt.Println(err)
-		finalResponse.Message = "Something went wrong please try again " + err.Error()
-		finalResponse.Success = false
-		finalResponse.Data = nil
-		c.JSON(http.StatusBadRequest, finalResponse)
-		return
-	}
-	res, err := users.LoginUser(request.Email, request.Password)
-	if err != nil {
-		if err == users.ErrUserNotFound || err == users.ErrInvalidCredentials {
-			finalResponse.Message = err.Error()
-			finalResponse.Success = false
-			finalResponse.Data = nil
-			c.JSON(http.StatusUnauthorized, finalResponse)
-			return
-		} else {
-			finalResponse.Message = "Something went wrong"
-			finalResponse.Success = false
-			finalResponse.Data = nil
-			c.JSON(http.StatusInternalServerError, finalResponse)
+		log.Printf("Login: Invalid request body: %v\n", err)
+		response = models.CommonGetResponse{
+			Success: false,
+			Message: "Invalid request: " + err.Error(),
 		}
+		c.JSON(http.StatusBadRequest, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Login successful",
-		"data":    res,
+	// Attempt login
+	res, err := users.LoginUser(request)
+	if err != nil {
+		log.Printf("Login error: %v\n", err)
+		status := http.StatusInternalServerError
+		message := "Something went wrong. Please try again."
+
+		// Handle known user errors
+		if err == users.ErrUserNotFound || err == users.ErrInvalidCredentials {
+			status = http.StatusUnauthorized
+			message = err.Error()
+		}
+
+		response = models.CommonGetResponse{
+			Success: false,
+			Message: message,
+		}
+		c.JSON(status, response)
+		return
+	}
+
+	// Success response
+	c.JSON(http.StatusOK, models.CommonGetResponse{
+		Success: true,
+		Message: "Login successful",
+		Data:    res,
 	})
 }

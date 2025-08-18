@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/Rajkumar-coderm/go-blog-backend/config"
@@ -14,44 +15,92 @@ import (
 )
 
 var (
-	ErrInvalidCredentials = errors.New("invalid email or password")
+	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrUserNotFound       = errors.New("user not found")
 )
 
-func LoginUser(email, password string) (*models.TokenModel, error) {
+func LoginUser(request models.LoginRequest) (*models.TokenModel, error) {
 	col := config.DB.Collection("users")
-	// Find the user by email
 	var user models.User
-	var userToken models.TokenModel
-	err := col.FindOne(context.TODO(), bson.M{"email": email}).Decode(&user)
+	var filter bson.M
+
+	// Set filter based on login type
+	switch request.LoginType {
+	case "email":
+		filter = bson.M{"email": request.Email, "registration_type": "email"}
+	case "phone":
+		filter = bson.M{"phone": request.Phone, "country_code": request.CountryCode, "phone_iso_code": request.PhoneIsoCode, "registration_type": "phone"}
+	case "google":
+		filter = bson.M{"google_id": request.GoogleID, "registration_type": "google"}
+	default:
+		return nil, errors.New("invalid login type")
+	}
+
+	// Log request for debugging
+	fmt.Println("Login filter:", filter)
+
+	// Try to find the user
+	err := col.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, ErrUserNotFound
+			// Optional fallback: find by email alone (in case registration_type is missing)
+			if request.LoginType == "email" {
+				fmt.Println("Fallback: trying without registration_type")
+				err = col.FindOne(context.TODO(), bson.M{"email": request.Email}).Decode(&user)
+				if err == mongo.ErrNoDocuments {
+					return nil, ErrUserNotFound
+				} else if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, ErrUserNotFound
+			}
+		} else {
+			return nil, err
 		}
-		return nil, err
 	}
 
-	// Verify password
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return nil, ErrInvalidCredentials
+	// Verify credentials
+	switch request.LoginType {
+	case "email", "phone":
+		if user.Password == "" {
+			return nil, ErrInvalidCredentials
+		}
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
+		if err != nil {
+			return nil, ErrInvalidCredentials
+		}
+	case "google":
+		if user.GoogleID != request.GoogleID {
+			return nil, ErrInvalidCredentials
+		}
 	}
 
-	// Generate JWT auth token
+	// Generate tokens
 	token, err := auth.GenerateJWT(user.ID.Hex())
 	if err != nil {
 		return nil, err
 	}
-
-	/// Generate refresh token
-	refreshToken, referr := auth.GenerateRefreshToken(user.ID.Hex())
-	if referr != nil {
-		return nil, referr
+	refreshToken, err := auth.GenerateRefreshToken(user.ID.Hex())
+	if err != nil {
+		return nil, err
 	}
-	col.UpdateOne(context.TODO(), bson.M{"_id": user.ID}, bson.M{"$set": bson.M{"active": true, "lastLogin": time.Now()}})
-	user.Token = token
-	user.RefreshToken = refreshToken
+
+	// Update user's login timestamp
+	_, err = col.UpdateOne(
+		context.TODO(),
+		bson.M{"_id": user.ID},
+		bson.M{"$set": bson.M{"active": true, "last_login": time.Now()}},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Prepare response
+	var userToken models.TokenModel
 	userToken.ID = user.ID.Hex()
+	userToken.Name = user.FirstName + " " + user.LastName
+	userToken.Username = user.Username
 	userToken.Email = user.Email
 	userToken.Role = user.Role
 	userToken.EmailVerified = user.EmailVerified
@@ -59,8 +108,6 @@ func LoginUser(email, password string) (*models.TokenModel, error) {
 	userToken.CreatedAt = user.CreatedAt
 	userToken.UpdatedAt = user.UpdatedAt
 	userToken.Active = user.Active
-	userToken.Name = user.FirstName + " " + user.LastName
-	userToken.Username = user.Username
 	userToken.Token = map[string]interface{}{
 		"token":                 token,
 		"type":                  "Bearer",
@@ -70,5 +117,6 @@ func LoginUser(email, password string) (*models.TokenModel, error) {
 		"refreshTokenExpiresIn": 7 * 24 * time.Hour,
 		"refreshTokenExpiresAt": time.Now().Add(7 * 24 * time.Hour),
 	}
+
 	return &userToken, nil
 }

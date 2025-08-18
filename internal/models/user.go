@@ -8,33 +8,32 @@ import (
 
 // User represents the user schema in MongoDB
 type User struct {
-	ID                  primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	FirstName           string             `bson:"first_name,omitempty" json:"firstName,omitempty"`
-	LastName            string             `bson:"last_name,omitempty" json:"lastName,omitempty"`
-	Email               string             `bson:"email" json:"email" validate:"required,email,unique"`
-	Username            string             `bson:"username" json:"username" validate:"required,unique"`
-	Password            string             `bson:"password" json:"password" validate:"required"`
-	Role                string             `bson:"role" json:"role" validate:"oneof=user editor admin"`
-	EmailVerified       bool               `bson:"email_verified" json:"emailVerified"`
-	VerificationToken   string             `bson:"verification_token,omitempty" json:"verificationToken,omitempty"`
-	ResetPasswordToken  string             `bson:"reset_password_token,omitempty" json:"resetPasswordToken,omitempty"`
-	ResetPasswordExpiry *time.Time         `bson:"reset_password_expires,omitempty" json:"resetPasswordExpires,omitempty"`
-	LastLogin           *time.Time         `bson:"last_login,omitempty" json:"lastLogin,omitempty"`
-	Contact             UserContact        `bson:"contact,omitempty" json:"contact,omitempty"`
-	Blog                UserBlog           `bson:"blog,omitempty" json:"blog,omitempty"`
-	Activity            UserActivity       `bson:"activity,omitempty" json:"activity,omitempty"`
-	Birthday            *time.Time         `bson:"birthday,omitempty" json:"birthday,omitempty"`
-	Avatar              string             `bson:"avatar,omitempty" json:"avatar,omitempty"`
-	Location            string             `bson:"location,omitempty" json:"location,omitempty"`
-	Notifications       UserNotifications  `bson:"notifications,omitempty" json:"notifications,omitempty"`
-	Bio                 string             `bson:"bio,omitempty" json:"bio,omitempty" validate:"max=500"`
-	Token               string             `bson:"token,omitempty" json:"token,omitempty"`
-	RefreshToken        string             `bson:"refresh_token,omitempty" json:"refreshToken,omitempty"`
-
-	// System Fields
-	Active    bool      `bson:"active" json:"active"`
-	CreatedAt time.Time `bson:"created_at,omitempty" json:"createdAt,omitempty"`
-	UpdatedAt time.Time `bson:"updated_at,omitempty" json:"updatedAt,omitempty"`
+	ID            primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	FirstName     string             `bson:"first_name,omitempty" json:"firstName,omitempty"`
+	LastName      string             `bson:"last_name,omitempty" json:"lastName,omitempty"`
+	Email         string             `bson:"email" json:"email"`
+	Username      string             `bson:"username" json:"username"`
+	Password      string             `bson:"password" json:"password"`
+	Role          string             `bson:"role" json:"role" validate:"oneof=user editor admin"`
+	EmailVerified bool               `bson:"email_verified" json:"emailVerified"`
+	LastLogin     *time.Time         `bson:"last_login,omitempty" json:"lastLogin,omitempty"`
+	Contact       UserContact        `bson:"contact,omitempty" json:"contact,omitempty"`
+	Blog          UserBlog           `bson:"blog,omitempty" json:"blog,omitempty"`
+	Activity      UserActivity       `bson:"activity,omitempty" json:"activity,omitempty"`
+	Birthday      *time.Time         `bson:"birthday,omitempty" json:"birthday,omitempty"`
+	Avatar        string             `bson:"avatar,omitempty" json:"avatar,omitempty"`
+	Location      string             `bson:"location,omitempty" json:"location,omitempty"`
+	Notifications UserNotifications  `bson:"notifications,omitempty" json:"notifications,omitempty"`
+	Bio           string             `bson:"bio,omitempty" json:"bio,omitempty" validate:"max=500"`
+	Active        bool               `bson:"active" json:"active"`
+	CreatedAt     time.Time          `bson:"created_at,omitempty" json:"createdAt,omitempty"`
+	UpdatedAt     time.Time          `bson:"updated_at,omitempty" json:"updatedAt,omitempty"`
+	RegistrationType string `bson:"registration_type" json:"registrationType" validate:"oneof=email phone google"`
+	PhoneVerified    bool   `bson:"phone_verified" json:"phoneVerified"`
+	GoogleID         string `bson:"google_id,omitempty" json:"googleId,omitempty"`
+	Phone            string `bson:"phone,omitempty" json:"phone,omitempty"`
+	CoutryCode       string `bson:"country_code,omitempty" json:"countryCode,omitempty"`
+	PhoneIsoCode     string `bson:"phone_iso_code,omitempty" json:"phoneIsoCode,omitempty"`
 }
 
 // UserContact contains contact and social fields
@@ -74,4 +73,15 @@ type UserNotifications struct {
 		Followers  bool `bson:"followers" json:"followers"`
 	} `bson:"email" json:"email"`
 	PushEnabled bool `bson:"push_enabled" json:"pushEnabled"`
+}
+
+
+type LoginRequest struct {
+	LoginType string `json:"loginType" binding:"required,oneof=email phone google"`
+	Email     string `json:"email" binding:"required_if=LoginType email,omitempty"`
+	Password  string `json:"password" binding:"required"`
+	Phone     string `json:"phone" binding:"required_if=LoginType phone,omitempty"`
+	CountryCode string `json:"countryCode" binding:"required_if=LoginType phone,omitempty"`
+	PhoneIsoCode string `json:"phoneIsoCode" binding:"required_if=LoginType phone,omitempty"`
+	GoogleID    string `json:"googleId" binding:"required_if=LoginType google,omitempty"`
 }

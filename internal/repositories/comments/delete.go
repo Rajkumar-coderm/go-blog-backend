@@ -56,9 +56,17 @@ func DeleteComment(c *gin.Context) error {
 
 	// Delete the comment
 	update := bson.M{"$pull": bson.M{"comments": bson.M{"_id": objID}}}
-	_, err = col.UpdateOne(c.Request.Context(), filter, update)
-	if err != nil {
-		return err
+	_, err1 := col.UpdateOne(c.Request.Context(), filter, update)
+	if err1 != nil {
+		return err1
+	}
+
+	// Update the totalCommentCount to reflect the current number of comments
+	newTotalCommentCount := len(post.Comments) - 1
+	updateTotalCommentCount := bson.M{"$set": bson.M{"totalCommentCount": newTotalCommentCount}}
+	_, err2 := col.UpdateOne(c.Request.Context(), bson.M{"_id": post.ID}, updateTotalCommentCount)
+	if err2 != nil {
+		return err2
 	}
 	return nil
 }

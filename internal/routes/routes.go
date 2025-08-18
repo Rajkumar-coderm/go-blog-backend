@@ -3,6 +3,7 @@ package routes
 import (
 	blogsHandler "github.com/Rajkumar-coderm/go-blog-backend/internal/handlers/blogs"
 	commentsHandler "github.com/Rajkumar-coderm/go-blog-backend/internal/handlers/comments"
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/handlers/profile"
 	userhandler "github.com/Rajkumar-coderm/go-blog-backend/internal/handlers/users"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/middlewares"
 	"github.com/gin-gonic/gin"
@@ -34,7 +35,13 @@ func RegisterRoutes(r *gin.Engine) {
 	api.POST("/posts", blogsHandler.CreatePost)
 	api.PATCH("/posts/like", blogsHandler.LikeDislikePost)
 	api.PATCH("/posts/bookmark", blogsHandler.BookmarkPost)
+
+	// Comment routes
 	api.POST("/posts/comment", commentsHandler.CommentPost)
 	api.GET("/posts/comment", commentsHandler.GetAllPostComments)
 	api.DELETE("/posts/comment", commentsHandler.DeleteComment)
+
+	// Profile routes
+	api.GET("/profile", profile.GetProfile)
+	api.PATCH("/profile", profile.UpdateProfile)
 }

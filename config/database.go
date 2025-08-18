@@ -14,7 +14,7 @@ var DB *mongo.Database
 
 // ConnectDB initializes the MongoDB connection
 func ConnectDB() *mongo.Database {
-	uri := os.Getenv("MONGO_URI")
+	uri := os.Getenv("MONGO_LOCAL_URI")
 	dbName := os.Getenv("MONGO_DB_NAME")
 
 	clientOptions := options.Client().ApplyURI(uri)
