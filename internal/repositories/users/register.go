@@ -19,8 +19,8 @@ import (
 
 // Validation errors
 var (
-	ErrRegistrationTypeRequired = errors.New("registration type is required")
-	ErrInvalidRegistrationType  = errors.New("invalid registration type")
+	ErrRegistrationTypeRequired = errors.New("registrationType is required")
+	ErrInvalidRegistrationType  = errors.New("invalid registrationType")
 	ErrEmailRequired            = errors.New("email is required for email registration")
 	ErrPasswordRequired         = errors.New("password is required for email registration")
 	ErrPhoneRequired            = errors.New("phone number is required for phone registration")

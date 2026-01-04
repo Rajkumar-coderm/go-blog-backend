@@ -105,8 +105,6 @@ func BookmarkPost(c *gin.Context) {
 		"data":    nil})
 }
 
-
-
 func DeletePost(c *gin.Context) {
 	finalResponse := models.CommonGetResponse{}
 	err := blogs.DeletePost(c)
@@ -121,4 +119,8 @@ func DeletePost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "Request successfully completed",
 		"message": "Success",
 		"data":    nil})
+}
+
+func SavedPost(c *gin.Context) {
+	blogs.SavePost(c)
 }

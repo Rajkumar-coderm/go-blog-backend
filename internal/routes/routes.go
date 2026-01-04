@@ -35,6 +35,7 @@ func RegisterRoutes(r *gin.Engine) {
 	api.POST("/posts", blogsHandler.CreatePost)
 	api.PATCH("/posts/like", blogsHandler.LikeDislikePost)
 	api.PATCH("/posts/bookmark", blogsHandler.BookmarkPost)
+	api.PATCH("/posts/save", blogsHandler.SavedPost)
 
 	// Comment routes
 	api.POST("/posts/comment", commentsHandler.CommentPost)
