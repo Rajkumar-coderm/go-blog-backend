@@ -12,6 +12,7 @@ import (
 
 func DeleteComment(c *gin.Context) error {
 	col := config.DB.Collection("posts")
+	commentsCol := config.DB.Collection("comments")
 
 	commentID := c.Query("id")
 	userID, ok := c.Get("userID")
@@ -28,21 +29,18 @@ func DeleteComment(c *gin.Context) error {
 		return errors.New("invalid comment ID format")
 	}
 
-	// Check if the comment exists and get the post
-	var post models.Post
-	filter := bson.M{"comments._id": objID}
-	err = col.FindOne(c.Request.Context(), filter).Decode(&post)
+	// Find the comment
+	var comment models.Comment
+	err = commentsCol.FindOne(c.Request.Context(), bson.M{"_id": objID}).Decode(&comment)
 	if err != nil {
 		return errors.New("comment not found")
 	}
 
 	// Check if the user is the author of the comment or the post
-	var commentAuthorID primitive.ObjectID
-	for _, comment := range post.Comments {
-		if comment.ID == objID {
-			commentAuthorID = comment.UserId
-			break
-		}
+	var post models.Post
+	err = col.FindOne(c.Request.Context(), bson.M{"_id": comment.PostId}).Decode(&post)
+	if err != nil {
+		return errors.New("post not found")
 	}
 
 	userObjID, err := primitive.ObjectIDFromHex(userID.(string))
@@ -50,23 +48,23 @@ func DeleteComment(c *gin.Context) error {
 		return errors.New("invalid user ID format")
 	}
 
-	if commentAuthorID != userObjID && post.UserId != userObjID {
+	if comment.UserId != userObjID && post.UserId != userObjID {
 		return errors.New("you are not authorized to delete this comment")
 	}
 
 	// Delete the comment
-	update := bson.M{"$pull": bson.M{"comments": bson.M{"_id": objID}}}
-	_, err1 := col.UpdateOne(c.Request.Context(), filter, update)
-	if err1 != nil {
-		return err1
+	_, err = commentsCol.DeleteOne(c.Request.Context(), bson.M{"_id": objID})
+	if err != nil {
+		return err
 	}
 
-	// Update the totalCommentCount to reflect the current number of comments
-	newTotalCommentCount := len(post.Comments) - 1
-	updateTotalCommentCount := bson.M{"$set": bson.M{"totalCommentCount": newTotalCommentCount}}
-	_, err2 := col.UpdateOne(c.Request.Context(), bson.M{"_id": post.ID}, updateTotalCommentCount)
-	if err2 != nil {
-		return err2
+	// Decrement commentsCount in posts
+	_, err = col.UpdateOne(c.Request.Context(), bson.M{"_id": comment.PostId}, bson.M{
+		"$inc": bson.M{"commentsCount": -1},
+	})
+	if err != nil {
+		return err
 	}
+
 	return nil
 }

@@ -11,11 +11,28 @@ import (
 
 // Delete a post
 func DeletePost(c *gin.Context) error {
-	col := config.DB.Collection("posts")
+	postsCol := config.DB.Collection("posts")
+	commentsCol := config.DB.Collection("comments")
+	savedCol := config.DB.Collection("bookmarked")
+
 	objID, err := primitive.ObjectIDFromHex(c.Query("id"))
 	if err != nil {
 		return err
 	}
-	_, err = col.DeleteOne(context.TODO(), bson.M{"_id": objID})
+
+	// Delete all comments for the post
+	_, err = commentsCol.DeleteMany(context.TODO(), bson.M{"postId": objID})
+	if err != nil {
+		return err
+	}
+
+	// Delete all bookmarks for the post
+	_, err = savedCol.DeleteMany(context.TODO(), bson.M{"postId": objID})
+	if err != nil {
+		return err
+	}
+
+	// Delete the post
+	_, err = postsCol.DeleteOne(context.TODO(), bson.M{"_id": objID})
 	return err
 }

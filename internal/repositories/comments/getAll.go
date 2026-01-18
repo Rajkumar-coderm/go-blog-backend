@@ -13,7 +13,7 @@ import (
 
 func GetAllPostComments(ctx *gin.Context, request *models.GetRequest) (interface{}, int64, error) {
 	col := config.DB.Collection("posts")
-	// userCol := config.DB.Collection("users")
+	commentsCol := config.DB.Collection("comments")
 
 	postID := ctx.Query("id")
 	if postID == "" {
@@ -32,30 +32,41 @@ func GetAllPostComments(ctx *gin.Context, request *models.GetRequest) (interface
 		request.Limit = 40
 	}
 
-	var exitsPost models.Post
+	var existsPost models.Post
 
-	_err := col.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&exitsPost)
+	_err := col.FindOne(context.TODO(), bson.M{"_id": objID}).Decode(&existsPost)
 
 	if _err != nil {
 		return nil, 0, _err
 	}
 
-	cursor, err := col.Find(context.TODO(), bson.M{"_id": objID, "comments": bson.M{"$exists": true}})
+	// Fetch all comments for the post
+	cursor, err := commentsCol.Find(context.TODO(), bson.M{"postId": objID})
 	if err != nil {
 		return nil, 0, err
 	}
 	defer cursor.Close(context.TODO())
 
-	var result struct {
-		Comments          []models.Comment `bson:"comments"`
-		TotalCommentCount int64            `bson:"totalCommentCount"`
+	var allComments []models.Comment
+	if err = cursor.All(context.TODO(), &allComments); err != nil {
+		return nil, 0, err
 	}
 
-	if cursor.Next(context.TODO()) {
-		if err := cursor.Decode(&result); err != nil {
-			return nil, 0, err
+	// Build the comment tree
+	commentMap := make(map[primitive.ObjectID]*models.Comment)
+	var rootComments []models.Comment
+
+	for i := range allComments {
+		comment := &allComments[i]
+		commentMap[comment.ID] = comment
+		if comment.ParentId == nil {
+			rootComments = append(rootComments, *comment)
+		} else {
+			if parent, exists := commentMap[*comment.ParentId]; exists {
+				parent.Replies = append(parent.Replies, comment)
+			}
 		}
 	}
 
-	return result.Comments, result.TotalCommentCount, nil
+	return rootComments, int64(len(allComments)), nil
 }

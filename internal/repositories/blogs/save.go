@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Rajkumar-coderm/go-blog-backend/config"
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/models"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -14,7 +15,7 @@ import (
 
 func SavePost(c *gin.Context) {
 	postsColl := config.DB.Collection("posts")
-	savedColl := config.DB.Collection("posts_saved")
+	savedColl := config.DB.Collection("bookmarked")
 
 	// Get userID from context
 	userID, ok := c.Get("userID")
@@ -77,12 +78,12 @@ func SavePost(c *gin.Context) {
 		}
 
 		now := time.Now()
-		doc := bson.M{
-			"_id":       primitive.NewObjectID(),
-			"userId":    userObjID,
-			"postId":    postObjID,
-			"createdAt": now,
-			"updatedAt": now,
+		doc := models.SavedPost{
+			ID:        primitive.NewObjectID(),
+			UserID:    userObjID,
+			PostID:    postObjID,
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 
 		if _, err := savedColl.InsertOne(context.TODO(), doc); err != nil {
@@ -109,5 +110,5 @@ func SavePost(c *gin.Context) {
 		return
 	}
 
-	c.Status(204) // No Content
+	c.Status(204)
 }

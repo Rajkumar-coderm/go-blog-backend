@@ -34,6 +34,7 @@ func RegisterRoutes(r *gin.Engine) {
 	api.GET("/posts", blogsHandler.GetAll)
 	api.POST("/posts", blogsHandler.CreatePost)
 	api.PATCH("/posts/like", blogsHandler.LikeDislikePost)
+	api.DELETE("/posts", blogsHandler.DeletePost)
 	api.PATCH("/posts/bookmark", blogsHandler.BookmarkPost)
 	api.PATCH("/posts/save", blogsHandler.SavedPost)
 

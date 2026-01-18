@@ -14,6 +14,7 @@ import (
 
 func CommentPost(c *gin.Context) error {
 	col := config.DB.Collection("posts")
+	commentsCol := config.DB.Collection("comments")
 
 	userID, ok := c.Get("userID")
 	if !ok {
@@ -87,28 +88,21 @@ func CommentPost(c *gin.Context) error {
 		if err != nil {
 			return errors.New("invalid reply-to comment ID format")
 		}
+		comment.ParentId = &replyToID
+	}
 
-		// Update the parent comment with the reply
-		res, err := col.UpdateOne(context.TODO(), bson.M{
-			"_id":          postObjID,
-			"comments._id": replyToID,
-		}, bson.M{
-			"$push": bson.M{"comments.$.replies": comment},
-		})
-		if err != nil {
-			return err
-		}
-		if res.ModifiedCount == 0 {
-			return errors.New("parent comment not found")
-		}
-	} else {
-		_, err := col.UpdateOne(context.TODO(), bson.M{"_id": postObjID}, bson.M{
-			"$push": bson.M{"comments": comment},
-			"$inc":  bson.M{"totalCommentCount": 1},
-		})
-		if err != nil {
-			return err
-		}
+	// Insert comment into comments collection
+	_, err = commentsCol.InsertOne(context.TODO(), comment)
+	if err != nil {
+		return err
+	}
+
+	// Increment commentsCount in posts collection
+	_, err = col.UpdateOne(context.TODO(), bson.M{"_id": postObjID}, bson.M{
+		"$inc": bson.M{"commentsCount": 1},
+	})
+	if err != nil {
+		return err
 	}
 
 	return nil

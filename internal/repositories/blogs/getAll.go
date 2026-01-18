@@ -57,17 +57,35 @@ func GetAll(ctx *gin.Context, request *models.GetRequest, userID string) (interf
 			{Key: "preserveNullAndEmptyArrays", Value: true}, // Keeps posts with no user attached
 		}}},
 
+		// Lookup saved posts for isBookmarked
+		bson.D{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "bookmarked"},
+			{Key: "let", Value: bson.D{{Key: "postId", Value: "$_id"}}},
+			{Key: "pipeline", Value: bson.A{
+				bson.D{{Key: "$match", Value: bson.D{
+					{Key: "$expr", Value: bson.D{
+						{Key: "$and", Value: bson.A{
+							bson.D{{Key: "$eq", Value: bson.A{"$postId", "$$postId"}}},
+							bson.D{{Key: "$eq", Value: bson.A{"$userId", userObjectID}}},
+						}},
+					}},
+				}}},
+			}},
+			{Key: "as", Value: "userBookmarks"},
+		}}},
+
 		bson.D{{Key: "$addFields", Value: bson.D{
-			// Ensure `totalLikes` and `totalCommentCount` always work
+			// Ensure `totalLikes` and `commentsCount` always work
 			{Key: "totalLikes", Value: bson.D{
 				{Key: "$size", Value: bson.D{
 					{Key: "$ifNull", Value: bson.A{"$likes", bson.A{}}}, // Avoid null error
 				}},
 			}},
-			{Key: "totalCommentCount", Value: bson.D{
-				{Key: "$size", Value: bson.D{
-					{Key: "$ifNull", Value: bson.A{"$comments", bson.A{}}}, // Avoid null error
-				}},
+			{Key: "commentsCount", Value: bson.D{
+				{Key: "$ifNull", Value: bson.A{"$commentsCount", 0}}, // Default to 0 if not present
+			}},
+			{Key: "bookmarksCount", Value: bson.D{
+				{Key: "$ifNull", Value: bson.A{"$bookmarksCount", 0}}, // Default to 0 if not present
 			}},
 			{Key: "auther.fullName", Value: bson.D{
 				{Key: "$concat", Value: bson.A{"$auther.first_name", " ", "$auther.last_name"}},
@@ -92,11 +110,7 @@ func GetAll(ctx *gin.Context, request *models.GetRequest, userID string) (interf
 			// `isBookmarked` to correctly check if the user bookmarked the post
 			{Key: "isBookmarked", Value: bson.D{
 				{Key: "$gt", Value: bson.A{
-					bson.D{{Key: "$size", Value: bson.D{{Key: "$filter", Value: bson.D{
-						{Key: "input", Value: bson.D{{Key: "$ifNull", Value: bson.A{"$bookmarks", bson.A{}}}}},
-						{Key: "as", Value: "bookmark"},
-						{Key: "cond", Value: bson.D{{Key: "$eq", Value: bson.A{"$$bookmark.userId", userObjectID}}}},
-					}}}}},
+					bson.D{{Key: "$size", Value: "$userBookmarks"}},
 					0,
 				}},
 			}},
@@ -108,7 +122,8 @@ func GetAll(ctx *gin.Context, request *models.GetRequest, userID string) (interf
 			{Key: "title", Value: 1},
 			{Key: "content", Value: 1},
 			{Key: "totalLikes", Value: 1},
-			{Key: "totalCommentCount", Value: 1},
+			{Key: "commentsCount", Value: 1},
+			{Key: "bookmarksCount", Value: 1},
 			{Key: "created_at", Value: 1},
 			{Key: "updated_at", Value: 1},
 			{Key: "isLiked", Value: 1},
