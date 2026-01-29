@@ -17,71 +17,33 @@ type User struct {
 	Role          string             `bson:"role" json:"role" validate:"oneof=user editor admin"`
 	EmailVerified bool               `bson:"email_verified" json:"emailVerified"`
 	LastLogin     *time.Time         `bson:"last_login,omitempty" json:"lastLogin,omitempty"`
-	Contact       UserContact        `bson:"contact,omitempty" json:"contact,omitempty"`
-	Blog          UserBlog           `bson:"blog,omitempty" json:"blog,omitempty"`
-	Activity      UserActivity       `bson:"activity,omitempty" json:"activity,omitempty"`
 	Birthday      *time.Time         `bson:"birthday,omitempty" json:"birthday,omitempty"`
 	Avatar        string             `bson:"avatar,omitempty" json:"avatar,omitempty"`
 	Location      string             `bson:"location,omitempty" json:"location,omitempty"`
-	Notifications UserNotifications  `bson:"notifications,omitempty" json:"notifications,omitempty"`
-	Bio           string             `bson:"bio,omitempty" json:"bio,omitempty" validate:"max=500"`
-	Active        bool               `bson:"active" json:"active"`
-	CreatedAt     time.Time          `bson:"created_at,omitempty" json:"createdAt,omitempty"`
-	UpdatedAt     time.Time          `bson:"updated_at,omitempty" json:"updatedAt,omitempty"`
-	RegistrationType string `bson:"registration_type" json:"registrationType" validate:"oneof=email phone google"`
-	PhoneVerified    bool   `bson:"phone_verified" json:"phoneVerified"`
-	GoogleID         string `bson:"google_id,omitempty" json:"googleId,omitempty"`
-	Phone            string `bson:"phone,omitempty" json:"phone,omitempty"`
-	CoutryCode       string `bson:"country_code,omitempty" json:"countryCode,omitempty"`
-	PhoneIsoCode     string `bson:"phone_iso_code,omitempty" json:"phoneIsoCode,omitempty"`
-}
 
-// UserContact contains contact and social fields
-type UserContact struct {
-	Phone  string `bson:"phone,omitempty" json:"phone,omitempty"`
-	Social struct {
-		Twitter   string `bson:"twitter,omitempty" json:"twitter,omitempty"`
-		Facebook  string `bson:"facebook,omitempty" json:"facebook,omitempty"`
-		Instagram string `bson:"instagram,omitempty" json:"instagram,omitempty"`
-		LinkedIn  string `bson:"linkedin,omitempty" json:"linkedin,omitempty"`
-		GitHub    string `bson:"github,omitempty" json:"github,omitempty"`
-	} `bson:"social,omitempty" json:"social"`
+	Bio              string    `bson:"bio,omitempty" json:"bio,omitempty" validate:"max=500"`
+	Active           bool      `bson:"active" json:"active"`
+	CreatedAt        time.Time `bson:"created_at,omitempty" json:"createdAt,omitempty"`
+	UpdatedAt        time.Time `bson:"updated_at,omitempty" json:"updatedAt,omitempty"`
+	RegistrationType string    `bson:"registration_type" json:"registrationType" validate:"oneof=email phone google"`
+	PhoneVerified    bool      `bson:"phone_verified" json:"phoneVerified"`
+	GoogleID         string    `bson:"google_id,omitempty" json:"googleId,omitempty"`
+	Phone            string    `bson:"phone,omitempty" json:"phone,omitempty"`
+	CoutryCode       string    `bson:"country_code,omitempty" json:"countryCode,omitempty"`
+	PhoneIsoCode     string    `bson:"phone_iso_code,omitempty" json:"phoneIsoCode,omitempty"`
 }
-
-// UserBlog contains blog-related fields
-type UserBlog struct {
-	Articles  []primitive.ObjectID `bson:"articles,omitempty" json:"articles,omitempty"`
-	Bookmarks []primitive.ObjectID `bson:"bookmarks,omitempty" json:"bookmarks,omitempty"`
-	Following []primitive.ObjectID `bson:"following,omitempty" json:"following,omitempty"`
-	Followers []primitive.ObjectID `bson:"followers,omitempty" json:"followers,omitempty"`
-	Interests []string             `bson:"interests,omitempty" json:"interests,omitempty"`
-}
-
-// UserActivity contains activity and metrics fields
-type UserActivity struct {
-	LastActive      *time.Time `bson:"last_active,omitempty" json:"lastActive,omitempty"`
-	CommentCount    int        `bson:"comment_count" json:"commentCount"`
-	ArticleCount    int        `bson:"article_count" json:"articleCount"`
-	UpvotesReceived int        `bson:"upvotes_received" json:"upvotesReceived"`
-}
-
-// UserNotifications contains notification settings
-type UserNotifications struct {
-	Email struct {
-		Newsletter bool `bson:"newsletter" json:"newsletter"`
-		Comments   bool `bson:"comments" json:"comments"`
-		Followers  bool `bson:"followers" json:"followers"`
-	} `bson:"email" json:"email"`
-	PushEnabled bool `bson:"push_enabled" json:"pushEnabled"`
-}
-
 
 type LoginRequest struct {
-	LoginType string `json:"loginType" binding:"required,oneof=email phone google"`
-	Email     string `json:"email" binding:"required_if=LoginType email,omitempty"`
-	Password  string `json:"password" binding:"required"`
-	Phone     string `json:"phone" binding:"required_if=LoginType phone,omitempty"`
-	CountryCode string `json:"countryCode" binding:"required_if=LoginType phone,omitempty"`
+	LoginType    string `json:"loginType" binding:"required,oneof=email phone google"`
+	Email        string `json:"email" binding:"required_if=LoginType email,omitempty"`
+	Password     string `json:"password" binding:"required"`
+	Phone        string `json:"phone" binding:"required_if=LoginType phone,omitempty"`
+	CountryCode  string `json:"countryCode" binding:"required_if=LoginType phone,omitempty"`
 	PhoneIsoCode string `json:"phoneIsoCode" binding:"required_if=LoginType phone,omitempty"`
-	GoogleID    string `json:"googleId" binding:"required_if=LoginType google,omitempty"`
+	GoogleID     string `json:"googleId" binding:"required_if=LoginType google,omitempty"`
+}
+
+type LogoutRequest struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+	LogoutAll    bool   `json:"logoutAll"`
 }

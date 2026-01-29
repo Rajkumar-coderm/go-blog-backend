@@ -3,9 +3,12 @@ package auth
 import (
 	"errors"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Load JWT secret from environment variables
@@ -20,7 +23,7 @@ type Claims struct {
 
 // GenerateJWT creates a new JWT token with expiration
 func GenerateJWT(id string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
+	expirationTime := time.Now().Add(15 * time.Minute)
 
 	claims := &Claims{
 		ID:   id,
@@ -73,4 +76,34 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+// ExtractUserIDFromToken extracts the user ID from the JWT token in the request
+func ExtractUserIDFromToken(c *gin.Context) (primitive.ObjectID, error) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		return primitive.ObjectID{}, errors.New("authorization header is missing")
+	}
+
+	// Extract token from Bearer scheme
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		return primitive.ObjectID{}, errors.New("invalid authorization header format")
+	}
+
+	tokenString := parts[1]
+
+	// Validate and parse token
+	claims, err := ValidateJWT(tokenString)
+	if err != nil {
+		return primitive.ObjectID{}, err
+	}
+
+	// Convert ID string to ObjectID
+	userID, err := primitive.ObjectIDFromHex(claims.ID)
+	if err != nil {
+		return primitive.ObjectID{}, errors.New("invalid user ID in token")
+	}
+
+	return userID, nil
 }

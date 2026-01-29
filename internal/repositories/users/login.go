@@ -9,6 +9,8 @@ import (
 	"github.com/Rajkumar-coderm/go-blog-backend/config"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/auth"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/models"
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/repositories/sessions"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
@@ -19,7 +21,7 @@ var (
 	ErrUserNotFound       = errors.New("user not found")
 )
 
-func LoginUser(request models.LoginRequest) (*models.TokenModel, error) {
+func LoginUser(c *gin.Context, request models.LoginRequest) (*models.TokenModel, error) {
 	col := config.DB.Collection("users")
 	var user models.User
 	var filter bson.M
@@ -86,6 +88,16 @@ func LoginUser(request models.LoginRequest) (*models.TokenModel, error) {
 		return nil, err
 	}
 
+	// Create session
+	deviceInfo := c.GetHeader("User-Agent")
+	ipAddress := c.ClientIP()
+	sessionExpiresAt := time.Now().Add(7 * 24 * time.Hour)
+
+	_, err = sessions.CreateSession(user.ID, refreshToken, deviceInfo, ipAddress, sessionExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+
 	// Update user's login timestamp
 	_, err = col.UpdateOne(
 		context.TODO(),
@@ -104,15 +116,14 @@ func LoginUser(request models.LoginRequest) (*models.TokenModel, error) {
 	userToken.Email = user.Email
 	userToken.Role = user.Role
 	userToken.EmailVerified = user.EmailVerified
-	userToken.Contact = user.Contact.Phone
 	userToken.CreatedAt = user.CreatedAt
 	userToken.UpdatedAt = user.UpdatedAt
 	userToken.Active = user.Active
 	userToken.Token = map[string]interface{}{
 		"token":                 token,
 		"type":                  "Bearer",
-		"expiresIn":             24 * time.Hour,
-		"expiresAt":             time.Now().Add(24 * time.Hour),
+		"expiresIn":             15 * time.Minute,
+		"expiresAt":             time.Now().Add(15 * time.Minute),
 		"refreshToken":          refreshToken,
 		"refreshTokenExpiresIn": 7 * 24 * time.Hour,
 		"refreshTokenExpiresAt": time.Now().Add(7 * 24 * time.Hour),

@@ -12,6 +12,10 @@ func main() {
 	config.LoadEnv()
 	config.ConnectDB()
 	r := gin.Default()
+
+	// Trust all proxies to get real client IP
+	r.SetTrustedProxies(nil)
+
 	routes.RegisterRoutes(r)
 
 	port := os.Getenv("PORT")

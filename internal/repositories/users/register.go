@@ -10,6 +10,7 @@ import (
 	"github.com/Rajkumar-coderm/go-blog-backend/config"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/auth"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/models"
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/repositories/sessions"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -137,14 +138,14 @@ func createTokenResponse(user *models.User, token, refreshToken string) *models.
 		Email:         user.Email,
 		Role:          user.Role,
 		EmailVerified: user.EmailVerified,
-		Contact:       user.Contact.Phone,
+		Contact:       user.Phone,
 		CreatedAt:     user.CreatedAt,
 		UpdatedAt:     user.UpdatedAt,
 		Token: map[string]interface{}{
 			"token":                 token,
 			"type":                  "Bearer",
-			"expiresIn":             24 * time.Hour,
-			"expiresAt":             time.Now().Add(24 * time.Hour),
+			"expiresIn":             15 * time.Minute,
+			"expiresAt":             time.Now().Add(15 * time.Minute),
 			"refreshToken":          refreshToken,
 			"refreshTokenExpiresIn": 7 * 24 * time.Hour,
 			"refreshTokenExpiresAt": time.Now().Add(7 * 24 * time.Hour),
@@ -210,6 +211,16 @@ func RegisterUser(c *gin.Context, user *models.User) (*models.TokenModel, error)
 
 	// Generate refresh token
 	refreshToken, err := auth.GenerateRefreshToken(user.ID.Hex())
+	if err != nil {
+		return nil, err
+	}
+
+	// Create session
+	deviceInfo := c.GetHeader("User-Agent")
+	ipAddress := c.ClientIP()
+	sessionExpiresAt := time.Now().Add(7 * 24 * time.Hour)
+
+	_, err = sessions.CreateSession(user.ID, refreshToken, deviceInfo, ipAddress, sessionExpiresAt)
 	if err != nil {
 		return nil, err
 	}

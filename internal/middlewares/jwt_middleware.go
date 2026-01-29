@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/auth"
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/repositories/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -31,6 +32,19 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Ensure only access tokens are allowed
 		if claims.Type != "access" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token type"})
+			c.Abort()
+			return
+		}
+
+		// Check whether this access token has been blacklisted (e.g., after logout)
+		isBlacklisted, err := sessions.IsTokenBlacklisted(tokenString)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "token check failed"})
+			c.Abort()
+			return
+		}
+		if isBlacklisted {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "token revoked"})
 			c.Abort()
 			return
 		}

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/auth"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/models"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/repositories/users"
 	"github.com/gin-gonic/gin"
@@ -56,7 +57,7 @@ func LoginUser(c *gin.Context) {
 	}
 
 	// Attempt login
-	res, err := users.LoginUser(request)
+	res, err := users.LoginUser(c, request)
 	if err != nil {
 		log.Printf("Login error: %v\n", err)
 		status := http.StatusInternalServerError
@@ -81,5 +82,55 @@ func LoginUser(c *gin.Context) {
 		Success: true,
 		Message: "Login successful",
 		Data:    res,
+	})
+}
+
+func LogoutUser(c *gin.Context) {
+	var request models.LogoutRequest
+	var response models.CommonGetResponse
+
+	// Bind and validate request
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Printf("Logout: Invalid request body: %v\n", err)
+		response = models.CommonGetResponse{
+			Success: false,
+			Message: "Invalid request: " + err.Error(),
+		}
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	// Get user ID from JWT token
+	userID, err := auth.ExtractUserIDFromToken(c)
+	if err != nil {
+		log.Printf("Logout: Unable to extract user ID: %v\n", err)
+		c.JSON(http.StatusUnauthorized, models.CommonGetResponse{
+			Success: false,
+			Message: "Unauthorized: " + err.Error(),
+		})
+		return
+	}
+
+	// Perform logout
+	err = users.LogoutUser(c, userID, request.RefreshToken, request.LogoutAll)
+	if err != nil {
+		log.Printf("Logout error: %v\n", err)
+		response = models.CommonGetResponse{
+			Success: false,
+			Message: "Error during logout: " + err.Error(),
+		}
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	// Success response
+	logoutType := "current device"
+	if request.LogoutAll {
+		logoutType = "all devices"
+	}
+
+	c.JSON(http.StatusOK, models.CommonGetResponse{
+		Success: true,
+		Message: "Logged out from " + logoutType + " successfully",
 	})
 }

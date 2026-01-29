@@ -31,6 +31,10 @@ func RegisterRoutes(r *gin.Engine) {
 
 	// Blog routes (authentication required)
 	api.Use(middlewares.AuthMiddleware())
+
+	// Logout route (requires authentication)
+	api.POST("/logout", userhandler.LogoutUser)
+
 	api.GET("/posts", blogsHandler.GetAll)
 	api.POST("/posts", blogsHandler.CreatePost)
 	api.PATCH("/posts/like", blogsHandler.LikeDislikePost)
