@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const unauthorizedMessage = "Unothorize"
+
 // AuthMiddleware protects routes by verifying JWT
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -24,14 +26,14 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := auth.ValidateJWT(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": unauthorizedMessage})
 			c.Abort()
 			return
 		}
 
 		// Ensure only access tokens are allowed
 		if claims.Type != "access" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token type"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": unauthorizedMessage})
 			c.Abort()
 			return
 		}
@@ -39,12 +41,12 @@ func AuthMiddleware() gin.HandlerFunc {
 		// Check whether this access token has been blacklisted (e.g., after logout)
 		isBlacklisted, err := sessions.IsTokenBlacklisted(tokenString)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "token check failed"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": unauthorizedMessage})
 			c.Abort()
 			return
 		}
 		if isBlacklisted {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "token revoked"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": unauthorizedMessage})
 			c.Abort()
 			return
 		}
