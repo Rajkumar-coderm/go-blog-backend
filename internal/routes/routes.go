@@ -29,25 +29,22 @@ func RegisterRoutes(r *gin.Engine) {
 	api.POST("/login", userhandler.LoginUser)
 	api.GET("/validate-username", userhandler.ValidateUserName)
 
+	api.POST("/logout", middlewares.AuthMiddleware(), userhandler.LogoutUser)
+
 	// Blog routes (authentication required)
-	api.Use(middlewares.AuthMiddleware())
+	api.GET("/posts", middlewares.AuthMiddleware(), blogsHandler.GetAll)
+	api.POST("/posts", middlewares.AuthMiddleware(), blogsHandler.CreatePost)
+	api.PATCH("/posts/like", middlewares.AuthMiddleware(), blogsHandler.LikeDislikePost)
+	api.DELETE("/posts", middlewares.AuthMiddleware(), blogsHandler.DeletePost)
+	api.PATCH("/posts/bookmark", middlewares.AuthMiddleware(), blogsHandler.BookmarkPost)
+	api.PATCH("/posts/save", middlewares.AuthMiddleware(), blogsHandler.SavedPost)
 
-	// Logout route (requires authentication)
-	api.POST("/logout", userhandler.LogoutUser)
+	// Comment routes (authentication required)
+	api.POST("/posts/comment", middlewares.AuthMiddleware(), commentsHandler.CommentPost)
+	api.GET("/posts/comment", middlewares.AuthMiddleware(), commentsHandler.GetAllPostComments)
+	api.DELETE("/posts/comment", middlewares.AuthMiddleware(), commentsHandler.DeleteComment)
 
-	api.GET("/posts", blogsHandler.GetAll)
-	api.POST("/posts", blogsHandler.CreatePost)
-	api.PATCH("/posts/like", blogsHandler.LikeDislikePost)
-	api.DELETE("/posts", blogsHandler.DeletePost)
-	api.PATCH("/posts/bookmark", blogsHandler.BookmarkPost)
-	api.PATCH("/posts/save", blogsHandler.SavedPost)
-
-	// Comment routes
-	api.POST("/posts/comment", commentsHandler.CommentPost)
-	api.GET("/posts/comment", commentsHandler.GetAllPostComments)
-	api.DELETE("/posts/comment", commentsHandler.DeleteComment)
-
-	// Profile routes
-	api.GET("/profile", profile.GetProfile)
-	api.PATCH("/profile", profile.UpdateProfile)
+	// Profile routes (authentication required)
+	api.GET("/profile", middlewares.AuthMiddleware(), profile.GetProfile)
+	api.PATCH("/profile", middlewares.AuthMiddleware(), profile.UpdateProfile)
 }

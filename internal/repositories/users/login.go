@@ -91,6 +91,9 @@ func LoginUser(c *gin.Context, request models.LoginRequest) (*models.TokenModel,
 	// Create session
 	deviceInfo := c.GetHeader("User-Agent")
 	ipAddress := c.ClientIP()
+	if ipAddress == "::1" {
+		ipAddress = "127.0.0.1"
+	}
 	sessionExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	_, err = sessions.CreateSession(user.ID, refreshToken, deviceInfo, ipAddress, sessionExpiresAt)

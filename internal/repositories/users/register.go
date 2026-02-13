@@ -34,12 +34,20 @@ var (
 	ErrPhoneExists              = errors.New("phone number already exists")
 	ErrGoogleAccountExists      = errors.New("google account already exists")
 	ErrUsernameExists           = errors.New("username already exists")
+	ErrFirstNameRequired        = errors.New("first name is required for email registration")
+	ErrLastNameRequired         = errors.New("last name is required for email registration")
 )
 
 // validateRegistrationData validates user registration data based on registration type
 func validateRegistrationData(user *models.User) error {
 	switch user.RegistrationType {
 	case "email":
+		if user.FirstName == "" {
+			return ErrFirstNameRequired
+		}
+		if user.LastName == "" {
+			return ErrLastNameRequired
+		}
 		if user.Email == "" {
 			return ErrEmailRequired
 		}
@@ -218,6 +226,9 @@ func RegisterUser(c *gin.Context, user *models.User) (*models.TokenModel, error)
 	// Create session
 	deviceInfo := c.GetHeader("User-Agent")
 	ipAddress := c.ClientIP()
+	if ipAddress == "::1" {
+		ipAddress = "127.0.0.1"
+	}
 	sessionExpiresAt := time.Now().Add(7 * 24 * time.Hour)
 
 	_, err = sessions.CreateSession(user.ID, refreshToken, deviceInfo, ipAddress, sessionExpiresAt)
