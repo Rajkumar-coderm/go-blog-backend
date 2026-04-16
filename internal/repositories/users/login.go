@@ -10,6 +10,7 @@ import (
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/auth"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/models"
 	"github.com/Rajkumar-coderm/go-blog-backend/internal/repositories/sessions"
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -38,14 +39,10 @@ func LoginUser(c *gin.Context, request models.LoginRequest) (*models.TokenModel,
 		return nil, errors.New("invalid login type")
 	}
 
-	// Log request for debugging
-	fmt.Println("Login filter:", filter)
-
 	// Try to find the user
 	err := col.FindOne(context.TODO(), filter).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			// Optional fallback: find by email alone (in case registration_type is missing)
 			if request.LoginType == "email" {
 				fmt.Println("Fallback: trying without registration_type")
 				err = col.FindOne(context.TODO(), bson.M{"email": request.Email}).Decode(&user)
@@ -94,7 +91,7 @@ func LoginUser(c *gin.Context, request models.LoginRequest) (*models.TokenModel,
 	if ipAddress == "::1" {
 		ipAddress = "127.0.0.1"
 	}
-	sessionExpiresAt := time.Now().Add(7 * 24 * time.Hour)
+	sessionExpiresAt := time.Now().Add(utils.RefreshTokenExpiryDuration)
 
 	_, err = sessions.CreateSession(user.ID, refreshToken, deviceInfo, ipAddress, sessionExpiresAt)
 	if err != nil {
@@ -123,13 +120,9 @@ func LoginUser(c *gin.Context, request models.LoginRequest) (*models.TokenModel,
 	userToken.UpdatedAt = user.UpdatedAt
 	userToken.Active = user.Active
 	userToken.Token = map[string]interface{}{
-		"token":                 token,
-		"type":                  "Bearer",
-		"expiresIn":             15 * time.Minute,
-		"expiresAt":             time.Now().Add(15 * time.Minute),
-		"refreshToken":          refreshToken,
-		"refreshTokenExpiresIn": 7 * 24 * time.Hour,
-		"refreshTokenExpiresAt": time.Now().Add(7 * 24 * time.Hour),
+		"token":        token,
+		"type":         "Bearer",
+		"refreshToken": refreshToken,
 	}
 
 	return &userToken, nil

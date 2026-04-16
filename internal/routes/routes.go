@@ -27,6 +27,7 @@ func RegisterRoutes(r *gin.Engine) {
 	// User routes (no authentication required)
 	api.POST("/register", userhandler.RegisterUser)
 	api.POST("/login", userhandler.LoginUser)
+	api.POST("/refresh", userhandler.RefreshToken)
 	api.GET("/validate-username", userhandler.ValidateUserName)
 
 	api.POST("/logout", middlewares.AuthMiddleware(), userhandler.LogoutUser)

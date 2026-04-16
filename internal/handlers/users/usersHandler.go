@@ -134,3 +134,40 @@ func LogoutUser(c *gin.Context) {
 		Message: "Logged out from " + logoutType + " successfully",
 	})
 }
+
+func RefreshToken(c *gin.Context) {
+	var request models.RefreshTokenRequest
+	var response models.CommonGetResponse
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Printf("RefreshToken: Invalid request body: %v\n", err)
+		response = models.CommonGetResponse{
+			Success: false,
+			Message: "Invalid request: " + err.Error(),
+		}
+		c.JSON(http.StatusBadRequest, response)
+		return
+	}
+
+	res, err := users.RefreshToken(c, request)
+	if err != nil {
+		log.Printf("RefreshToken error: %v\n", err)
+		status := http.StatusUnauthorized
+		message := err.Error()
+		if err == users.ErrUserNotFound {
+			status = http.StatusNotFound
+		}
+		response = models.CommonGetResponse{
+			Success: false,
+			Message: message,
+		}
+		c.JSON(status, response)
+		return
+	}
+
+	c.JSON(http.StatusOK, models.CommonGetResponse{
+		Success: true,
+		Message: "Token refreshed successfully",
+		Data:    res,
+	})
+}

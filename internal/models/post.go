@@ -20,6 +20,7 @@ type Post struct {
 	BookmarksCount int                `bson:"bookmarksCount" json:"bookmarksCount"`
 	IsLiked        bool               `bson:"isLiked,omitempty" json:"isLiked,omitempty"`
 	IsBookmarked   bool               `bson:"isBookmarked,omitempty" json:"isBookmarked,omitempty"`
+	Status         string             `bson:"status,omitempty" json:"status,omitempty" binding:"required,oneof=draft publish"`
 }
 
 type Comment struct {

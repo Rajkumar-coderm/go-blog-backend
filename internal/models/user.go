@@ -47,3 +47,7 @@ type LogoutRequest struct {
 	RefreshToken string `json:"refreshToken" binding:"required"`
 	LogoutAll    bool   `json:"logoutAll"`
 }
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}

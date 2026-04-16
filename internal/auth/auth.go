@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Rajkumar-coderm/go-blog-backend/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -23,7 +24,7 @@ type Claims struct {
 
 // GenerateJWT creates a new JWT token with expiration
 func GenerateJWT(id string) (string, error) {
-	expirationTime := time.Now().Add(15 * time.Minute)
+	expirationTime := time.Now().Add(utils.TokenExpiryDuration)
 
 	claims := &Claims{
 		ID:   id,
@@ -42,7 +43,7 @@ func GenerateJWT(id string) (string, error) {
 
 // GenerateRefreshToken creates a refresh token (valid for 7 days)
 func GenerateRefreshToken(id string) (string, error) {
-	expirationTime := time.Now().Add(7 * 24 * time.Hour)
+	expirationTime := time.Now().Add(utils.RefreshTokenExpiryDuration)
 
 	claims := &Claims{
 		ID:   id,
